@@ -1,6 +1,7 @@
 package com.example.weather_app;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -13,12 +14,10 @@ public class WeatherService {
     @Autowired
     private GeocodingService geocodingService;
 
-    @Autowired
-    private WeatherDataRepository weatherDataRepository;
-
     private final RestTemplate restTemplate = new RestTemplate();
 
-    final String apiKey = "c6308296a04fda65f432a384052a04dc";
+    @Value("${openweathermap.api.key}")
+    private String apiKey;
 
     public WeatherData getCoordinatesAndSaveWeather(String city, String countryCode) {
         var geoCoordinates = geocodingService.getCoordinates(city, countryCode);
@@ -46,7 +45,7 @@ public class WeatherService {
         weather.setTemperature(temperature);
         weather.setLastUpdated(LocalDateTime.now());
 
-        return weatherDataRepository.save(weather);
+        return weather;
 
     }
 }

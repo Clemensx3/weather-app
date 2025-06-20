@@ -68,6 +68,8 @@ public class WeatherDataController {
                                                     @RequestParam(value = "countryCode") String countryCode) {
         var weather = weatherService.getCoordinatesAndSaveWeather(city, countryCode);
 
+        weatherDataRepository.save(weather);
+
         return new ResponseEntity<WeatherData>(weather, HttpStatus.OK);
     }
 
@@ -80,9 +82,7 @@ public class WeatherDataController {
         if(weatherFromDb.isPresent()) {
             var lastUpdatedTime = weatherFromDb.get().getLastUpdated();
             if(LocalDateTime.now().isAfter(lastUpdatedTime.plusHours(1))) {
-                //Patch request ausführen
-                //Return
-                return new ResponseEntity("Now the entity should be patched", HttpStatus.OK);
+                return patchWeather(city, countryCode);
             } else {
                 return new ResponseEntity<WeatherData>(weatherFromDb.get(), HttpStatus.OK);
             }
@@ -90,7 +90,24 @@ public class WeatherDataController {
         return fetchWeather(city, countryCode);
     }
 
-    
+    @PatchMapping("/weather/api")
+    public ResponseEntity<WeatherData> patchWeather(@RequestParam(value = "city") String city,
+                                                    @RequestParam(value = "countryCode") String countryCode) {
+        Optional<WeatherData> weatherInDb = weatherDataRepository.findByCityAndCountryCode(city, countryCode);
+
+        if(weatherInDb.isPresent()) {
+            var updatedWeather = weatherService.getCoordinatesAndSaveWeather(city, countryCode);
+
+            weatherInDb.get().setTemperature(updatedWeather.getTemperature());
+            weatherInDb.get().setLastUpdated(LocalDateTime.now());
+
+            var savedWeather = weatherDataRepository.save(weatherInDb.get());
+
+            return new ResponseEntity<WeatherData>(savedWeather, HttpStatus.OK);
+        }
+
+        return new ResponseEntity("No city with matching country code found to patch: " + city + ", " + countryCode, HttpStatus.NOT_FOUND);
+    }
 
 
 

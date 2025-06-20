@@ -17,7 +17,8 @@ public class GeocodingService {
             String country
     ) {}
 
-    final String apiKey = "c6308296a04fda65f432a384052a04dc";
+    @Value("${openweathermap.api.key}")
+    private String apiKey;
     private final RestTemplate restTemplate = new RestTemplate();
 
     public Optional<GeoCodingResponse> getCoordinates(String city, String countryCode) {
