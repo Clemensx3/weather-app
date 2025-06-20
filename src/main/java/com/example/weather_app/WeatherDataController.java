@@ -1,16 +1,21 @@
 package com.example.weather_app;
 
+import jdk.javadoc.doclet.Reporter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @RestController
 public class WeatherDataController {
     @Autowired
     private WeatherDataRepository weatherDataRepository;
+
+    @Autowired
+    private WeatherService weatherService;
 
     @GetMapping("/weather")
     public ResponseEntity<WeatherData> getWeatherByCity(@RequestParam(value = "city") String city) {
@@ -57,6 +62,40 @@ public class WeatherDataController {
         }
         return new ResponseEntity("No existing city to update with name " + editedWeatherData.getCity() + " found", HttpStatus.NOT_FOUND);
     }
+
+    @PostMapping("/weather/api")
+    public ResponseEntity<WeatherData> fetchWeather(@RequestParam(value = "city") String city,
+                                                    @RequestParam(value = "countryCode") String countryCode) {
+        var weather = weatherService.getCoordinatesAndSaveWeather(city, countryCode);
+
+        return new ResponseEntity<WeatherData>(weather, HttpStatus.OK);
+    }
+
+    @GetMapping("/weather/api")
+    public ResponseEntity<WeatherData> getWeather(@RequestParam(value = "city") String city,
+                                                  @RequestParam(value = "countryCode") String countryCode) {
+
+        Optional<WeatherData> weatherFromDb = weatherDataRepository.findByCityAndCountryCode(city, countryCode);
+
+        if(weatherFromDb.isPresent()) {
+            var lastUpdatedTime = weatherFromDb.get().getLastUpdated();
+            if(LocalDateTime.now().isAfter(lastUpdatedTime.plusHours(1))) {
+                //Patch request ausführen
+                //Return
+                return new ResponseEntity("Now the entity should be patched", HttpStatus.OK);
+            } else {
+                return new ResponseEntity<WeatherData>(weatherFromDb.get(), HttpStatus.OK);
+            }
+        }
+        return fetchWeather(city, countryCode);
+    }
+
+    
+
+
+
+
+
 
 
 }
